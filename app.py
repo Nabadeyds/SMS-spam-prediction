@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for, session
 import pickle
 import re
 import nltk
@@ -6,16 +6,14 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import numpy as np
 
-# Download stopwords if not already present
 try:
     nltk.data.find("corpora/stopwords")
 except LookupError:
     nltk.download("stopwords")
 
-# Initialize Flask app
 app = Flask(__name__)
+app.secret_key = "your_secret_key"  # Required for session to work
 
-# Text preprocessing function
 def sentconv(seinp):
     lowersent = seinp.lower()
     clsent = re.sub(r"<.*?>", "", lowersent)
@@ -28,14 +26,13 @@ def sentconv(seinp):
     splitx = [p.stem(i) for i in cleanstopwds]
     return " ".join(splitx)
 
-# Load model and vectorizer
 model = pickle.load(open("model.pkl", "rb"))
 vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
-# Routes
 @app.route('/')
 def home():
-    return render_template('index.html')
+    result = session.pop('result', None)  # Clear after use
+    return render_template('index.html', prediction_text=result)
 
 @app.route('/predict', methods=["POST"])
 def predict():
@@ -43,8 +40,9 @@ def predict():
     transformed_msg = sentconv(message)
     vect_input = vectorizer.transform([transformed_msg])
     prediction = model.predict(vect_input)[0]
-    result = "Spam" if prediction == 1 else "Ham"
-    return render_template('index.html', prediction_text=f"Prediction: {result}")
+    result = "Prediction: Spam" if prediction == 1 else "Prediction: Ham"
+    session['result'] = result
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
