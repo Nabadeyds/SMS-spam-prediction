@@ -1,9 +1,16 @@
 from flask import Flask, request, render_template
 import pickle
 import re
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import numpy as np
+
+# Download stopwords if not already present
+try:
+    nltk.data.find("corpora/stopwords")
+except LookupError:
+    nltk.download("stopwords")
 
 # Initialize Flask app
 app = Flask(__name__)
